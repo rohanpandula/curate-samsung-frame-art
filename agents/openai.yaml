@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frame Art Curator"
+  short_description: "Curate and safely sync Samsung Frame photos"
+  default_prompt: "Use $curate-frame-art to art-direct and safely sync new photos to my Samsung Frame."

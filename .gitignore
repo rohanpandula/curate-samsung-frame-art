@@ -1,0 +1,15 @@
+# Private installation profile
+references/environment.local.md
+
+# Generated run data can contain photo names, hashes, thumbnails, and local paths
+run-artifacts/
+local/
+*.local.json
+
+# Python cache
+__pycache__/
+*.py[cod]
+.ruff_cache/
+
+# macOS
+.DS_Store

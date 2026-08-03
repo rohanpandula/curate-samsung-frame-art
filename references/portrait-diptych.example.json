@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "canvas": {"width": 1920, "height": 1080, "color_space": "sRGB"},
+  "acknowledge_upscale_risk": false,
+  "records": [
+    {
+      "asset_id": "diptych_example_pair",
+      "treatment": "diptych_portrait",
+      "source_asset_ids": ["src_left_hash", "src_right_hash"],
+      "rationale": "The photographs belong to the same sequence and share light and palette.",
+      "pair_evidence": {
+        "captured_at_delta_seconds": 45,
+        "basis": ["same_session", "same_location", "visual_sequence"]
+      },
+      "left_right_reason": "Motion starts on the left and resolves on the right.",
+      "max_crop_fraction": 0.0,
+      "allow_upscale": false,
+      "matte_strategy": "adaptive",
+      "matte_tone": "light",
+      "outer_margins": {"left": 130, "right": 130, "top": 90, "bottom": 90},
+      "gutter": 70,
+      "vertical_bias": -0.015,
+      "keyline": {"enabled": false, "color": "#9CA1A3", "width": 2},
+      "shadow": {"enabled": true, "opacity": 0.15, "blur": 18, "offset_y": 8}
+    }
+  ]
+}
