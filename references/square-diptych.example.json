@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "canvas": {"width": 1920, "height": 1080, "color_space": "sRGB"},
+  "acknowledge_upscale_risk": false,
+  "records": [
+    {
+      "asset_id": "square_diptych_example_pair",
+      "treatment": "diptych_square",
+      "source_asset_ids": ["src_square_left", "src_square_right"],
+      "rationale": "These two square photographs belong to the same sequence and read as one quiet pair.",
+      "pair_evidence": {
+        "captured_at_delta_seconds": 32,
+        "basis": ["same_session", "same_location", "visual_sequence"]
+      },
+      "left_right_reason": "The line of sight moves from the left photograph into the right one.",
+      "max_crop_fraction": 0.0,
+      "allow_upscale": false,
+      "matte_strategy": "adaptive",
+      "matte_tone": "light",
+      "outer_margins": {"left": 140, "right": 140, "top": 120, "bottom": 120},
+      "gutter": 72,
+      "vertical_bias": -0.01,
+      "shadow": {
+        "enabled": true,
+        "color": "#111214",
+        "opacity": 0.13,
+        "blur": 15,
+        "offset_x": 2,
+        "offset_y": 8
+      }
+    }
+  ]
+}

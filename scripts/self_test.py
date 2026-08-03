@@ -70,7 +70,7 @@ def run_command(
             f"{(result.stderr or result.stdout).strip()}"
         )
     if not should_succeed and result.returncode == 0:
-        raise SelfTestError(f"{label} unexpectedly allowed an overwrite")
+        raise SelfTestError(f"{label} unexpectedly succeeded")
     return result
 
 
@@ -109,6 +109,59 @@ def synthetic_portrait(
         draw.polygon([(0, 430), (1000, 1150), (1000, 1500), (0, 1500)], fill=accent)
         draw.ellipse((400, 260, 890, 750), outline=(239, 232, 215), width=28)
     draw.rectangle((120, 1050, 880, 1110), fill=(232, 223, 204))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(path, format="PNG", compress_level=4)
+    return size
+
+
+def synthetic_square(
+    path: Path,
+    *,
+    size: int,
+    background: tuple[int, int, int],
+    accent: tuple[int, int, int],
+    reverse: bool,
+) -> tuple[int, int]:
+    dimensions = (size, size)
+    image = Image.new("RGB", dimensions, background)
+    draw = ImageDraw.Draw(image)
+    border = max(18, size // 45)
+    draw.rectangle((0, 0, size - 1, border), fill=(22, 24, 29))
+    if reverse:
+        draw.polygon(
+            [(0, size), (0, size // 3), (size, size * 3 // 4), (size, size)],
+            fill=accent,
+        )
+        draw.ellipse(
+            (size // 8, size // 6, size * 5 // 8, size * 2 // 3),
+            outline=(239, 232, 215),
+            width=border,
+        )
+    else:
+        draw.polygon(
+            [(0, size), (0, size * 3 // 4), (size, size // 3), (size, size)],
+            fill=accent,
+        )
+        draw.ellipse(
+            (size * 3 // 8, size // 6, size * 7 // 8, size * 2 // 3),
+            outline=(239, 232, 215),
+            width=border,
+        )
+    draw.rectangle(
+        (size // 8, size * 4 // 5, size * 7 // 8, size * 4 // 5 + border * 2),
+        fill=(232, 223, 204),
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(path, format="PNG", compress_level=4)
+    return dimensions
+
+
+def synthetic_near_square(path: Path) -> tuple[int, int]:
+    size = (1000, 980)
+    image = Image.new("RGB", size, (58, 70, 82))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((0, 0, size[0] - 1, 30), fill=(20, 23, 28))
+    draw.ellipse((240, 210, 760, 730), fill=(182, 121, 68))
     path.parent.mkdir(parents=True, exist_ok=True)
     image.save(path, format="PNG", compress_level=4)
     return size
@@ -433,6 +486,331 @@ def portrait_test(root: Path, scripts: Path) -> None:
     )
 
 
+def square_test(root: Path, scripts: Path) -> None:
+    test_root = root / "square-diptych"
+    inputs = test_root / "inputs"
+    left = inputs / "synthetic-square-left.png"
+    right = inputs / "synthetic-square-right.png"
+    left_size = synthetic_square(
+        left,
+        size=1400,
+        background=(45, 75, 98),
+        accent=(180, 111, 61),
+        reverse=False,
+    )
+    right_size = synthetic_square(
+        right,
+        size=1200,
+        background=(91, 59, 72),
+        accent=(61, 118, 108),
+        reverse=True,
+    )
+    left_id = "src_synthetic_square_left"
+    right_id = "src_synthetic_square_right"
+    pair_id = "square_diptych_synthetic_pair"
+    catalog = test_root / "square-catalog.json"
+    art = test_root / "square-diptych-art-direction.json"
+    output = test_root / "proofs"
+    audit = test_root / "validation.json"
+    catalog_records = []
+    for identifier, path, size in (
+        (left_id, left, left_size),
+        (right_id, right, right_size),
+    ):
+        catalog_records.append(
+            {
+                "asset_id": identifier,
+                "source_name": path.name,
+                "source_path": str(path),
+                "source_sha256": sha256_file(path),
+                "width": size[0],
+                "height": size[1],
+                "aspect_ratio": 1.0,
+                "orientation": "square",
+            }
+        )
+    catalog_document: dict[str, Any] = {
+        "schema_version": 1,
+        "status": "complete",
+        "private_artifact": True,
+        "record_count": 2,
+        "records": catalog_records,
+    }
+    art_document: dict[str, Any] = {
+        "schema_version": 1,
+        "canvas": {"width": 1920, "height": 1080, "color_space": "sRGB"},
+        "acknowledge_upscale_risk": False,
+        "records": [
+            {
+                "asset_id": pair_id,
+                "treatment": "diptych_square",
+                "source_asset_ids": [left_id, right_id],
+                "rationale": "Synthetic squares used only by the offline smoke test.",
+                "pair_evidence": {"basis": ["synthetic_test_pair"]},
+                "left_right_reason": "Fixed order checks source binding.",
+                "max_crop_fraction": 0.0,
+                "allow_upscale": False,
+                "matte_strategy": "adaptive",
+                "matte_tone": "light",
+                "outer_margins": {
+                    "left": 140,
+                    "right": 140,
+                    "top": 120,
+                    "bottom": 120,
+                },
+                "gutter": 72,
+                "vertical_bias": -0.01,
+                "shadow": {
+                    "enabled": True,
+                    "color": "#111214",
+                    "opacity": 0.13,
+                    "blur": 15,
+                    "offset_x": 3,
+                    "offset_y": 8,
+                },
+            }
+        ],
+    }
+    write_json(catalog, catalog_document)
+    write_json(art, art_document)
+    render_command = [
+        sys.executable,
+        str(scripts / "render_square_diptychs.py"),
+        "--catalog",
+        str(catalog),
+        "--art-direction",
+        str(art),
+        "--output-dir",
+        str(output),
+    ]
+    run_command(
+        render_command, cwd=root, should_succeed=True, label="square-diptych renderer"
+    )
+    manifest_path = output / "square-diptych-render-manifest.json"
+    manifest = read_json(manifest_path)
+    render_records = manifest.get("records")
+    require(
+        isinstance(render_records, list) and len(render_records) == 1,
+        "Square-diptych manifest count differs",
+    )
+    render_record = render_records[0]
+    require(isinstance(render_record, dict), "Square-diptych render record is malformed")
+    require(
+        render_record.get("source_asset_ids") == [left_id, right_id],
+        "Square-diptych renderer changed left/right order",
+    )
+    rects = render_record.get("image_rects")
+    require(isinstance(rects, list) and len(rects) == 2, "Square rectangles are missing")
+    require(
+        all(
+            isinstance(rect, dict)
+            and rect.get("width") == rect.get("height")
+            and rect.get("width") == rects[0].get("width")
+            for rect in rects
+        ),
+        "Square sources did not receive equal-size square rectangles",
+    )
+    require(render_record.get("crop_fraction") == 0.0, "Square pair was cropped")
+    require(render_record.get("complete_sources") is True, "Square pair is not complete")
+    require(render_record.get("equal_size") is True, "Square pair is not equal-size")
+    require(
+        render_record.get("keyline") == {"enabled": False},
+        "Omitted square keyline did not default to off",
+    )
+    require(
+        render_record.get("shadow", {}).get("offset_x") == 3
+        and render_record.get("shadow", {}).get("offset_y") == 8,
+        "Square-diptych shadow offsets changed",
+    )
+    panel = Path(str(render_record.get("output_path", "")))
+    panel_hash = verify_panel(panel, str(render_record.get("output_sha256", "")))
+    require(
+        len(list((output / "rendered").glob("*.png"))) == 1,
+        "Square-diptych render directory does not contain exactly one panel",
+    )
+    contact_sheets = manifest.get("contact_sheets")
+    require(
+        isinstance(contact_sheets, list) and len(contact_sheets) == 1,
+        "Square-diptych renderer did not create one contact sheet",
+    )
+    run_command(
+        render_command,
+        cwd=root,
+        should_succeed=False,
+        label="square-diptych no-overwrite rerun",
+    )
+    require(
+        sha256_file(panel) == panel_hash,
+        "Square-diptych no-overwrite rerun altered the panel",
+    )
+    run_command(
+        [
+            sys.executable,
+            str(scripts / "validate_square_diptychs.py"),
+            "--catalog",
+            str(catalog),
+            "--art-direction",
+            str(art),
+            "--render-manifest",
+            str(manifest_path),
+            "--output",
+            str(audit),
+        ],
+        cwd=root,
+        should_succeed=True,
+        label="square-diptych validator",
+    )
+    validation = read_json(audit)
+    require(
+        validation.get("status") == "PASS",
+        "Square-diptych validation audit did not PASS",
+    )
+    require(
+        not validation.get("failures"),
+        "Square-diptych validation audit contains failures",
+    )
+
+    replay_output = test_root / "deterministic-replay"
+    replay_command = render_command[:-1] + [str(replay_output)]
+    run_command(
+        replay_command,
+        cwd=root,
+        should_succeed=True,
+        label="square-diptych deterministic replay",
+    )
+    replay = read_json(replay_output / "square-diptych-render-manifest.json")
+    replay_records = replay.get("records")
+    replay_sheets = replay.get("contact_sheets")
+    require(
+        isinstance(replay_records, list) and len(replay_records) == 1,
+        "Square-diptych replay manifest is malformed",
+    )
+    replay_panel = Path(str(replay_records[0].get("output_path", "")))
+    require(
+        replay_records[0].get("output_sha256") == panel_hash
+        and sha256_file(replay_panel) == panel_hash,
+        "Square-diptych replay changed the panel file hash",
+    )
+    with Image.open(panel) as first_opened, Image.open(replay_panel) as second_opened:
+        first_pixels = first_opened.convert("RGB").tobytes()
+        second_pixels = second_opened.convert("RGB").tobytes()
+    require(first_pixels == second_pixels, "Square-diptych replay changed panel pixels")
+    require(
+        isinstance(replay_sheets, list) and len(replay_sheets) == 1,
+        "Square-diptych replay contact-sheet manifest is malformed",
+    )
+    first_sheet = Path(str(contact_sheets[0].get("path", "")))
+    replay_sheet = Path(str(replay_sheets[0].get("path", "")))
+    require(
+        replay_sheets[0].get("sha256") == contact_sheets[0].get("sha256")
+        and sha256_file(replay_sheet) == sha256_file(first_sheet),
+        "Square-diptych replay changed the contact-sheet file hash",
+    )
+    with Image.open(first_sheet) as first_opened, Image.open(replay_sheet) as second_opened:
+        first_pixels = first_opened.convert("RGB").tobytes()
+        second_pixels = second_opened.convert("RGB").tobytes()
+    require(
+        first_pixels == second_pixels,
+        "Square-diptych replay changed contact-sheet pixels",
+    )
+
+    invalid_arity = read_json(art)
+    invalid_records = invalid_arity.get("records")
+    require(isinstance(invalid_records, list), "Square arity fixture is malformed")
+    invalid_records[0]["source_asset_ids"] = [left_id]
+    invalid_arity_path = test_root / "invalid-arity.json"
+    write_json(invalid_arity_path, invalid_arity)
+    run_command(
+        [
+            sys.executable,
+            str(scripts / "render_square_diptychs.py"),
+            "--catalog",
+            str(catalog),
+            "--art-direction",
+            str(invalid_arity_path),
+            "--output-dir",
+            str(test_root / "invalid-arity-output"),
+        ],
+        cwd=root,
+        should_succeed=False,
+        label="square-diptych invalid arity",
+    )
+
+    near_square = inputs / "synthetic-near-square.png"
+    near_size = synthetic_near_square(near_square)
+    near_id = "src_synthetic_near_square"
+    non_square_catalog = json.loads(json.dumps(catalog_document))
+    non_square_records = non_square_catalog["records"]
+    non_square_records.append(
+        {
+            "asset_id": near_id,
+            "source_name": near_square.name,
+            "source_path": str(near_square),
+            "source_sha256": sha256_file(near_square),
+            "width": near_size[0],
+            "height": near_size[1],
+            "aspect_ratio": round(near_size[0] / near_size[1], 6),
+            "orientation": "square",
+        }
+    )
+    non_square_catalog["record_count"] = 3
+    non_square_catalog_path = test_root / "near-square-catalog.json"
+    write_json(non_square_catalog_path, non_square_catalog)
+    non_square_art = json.loads(json.dumps(art_document))
+    non_square_art["records"][0]["source_asset_ids"] = [left_id, near_id]
+    non_square_art_path = test_root / "near-square-art-direction.json"
+    write_json(non_square_art_path, non_square_art)
+    run_command(
+        [
+            sys.executable,
+            str(scripts / "render_square_diptychs.py"),
+            "--catalog",
+            str(non_square_catalog_path),
+            "--art-direction",
+            str(non_square_art_path),
+            "--output-dir",
+            str(test_root / "near-square-output"),
+        ],
+        cwd=root,
+        should_succeed=False,
+        label="square-diptych non-1:1 source",
+    )
+
+    tampered_manifest = read_json(manifest_path)
+    tampered_manifest["records"][0]["image_rects"][0]["width"] += 1
+    tampered_manifest_path = test_root / "tampered-render-manifest.json"
+    tampered_audit = test_root / "tampered-validation.json"
+    write_json(tampered_manifest_path, tampered_manifest)
+    run_command(
+        [
+            sys.executable,
+            str(scripts / "validate_square_diptychs.py"),
+            "--catalog",
+            str(catalog),
+            "--art-direction",
+            str(art),
+            "--render-manifest",
+            str(tampered_manifest_path),
+            "--output",
+            str(tampered_audit),
+        ],
+        cwd=root,
+        should_succeed=False,
+        label="square-diptych tampered geometry",
+    )
+    rejected = read_json(tampered_audit)
+    failure_names = {
+        str(failure.get("name"))
+        for failure in rejected.get("failures", [])
+        if isinstance(failure, dict)
+    }
+    require(
+        rejected.get("status") == "FAIL"
+        and f"pair.{pair_id}.composition" in failure_names,
+        "Square validator did not reject tampered geometry",
+    )
+
+
 def main() -> int:
     scripts = Path(__file__).resolve().parent
     required = (
@@ -440,6 +818,8 @@ def main() -> int:
         "validate_rendered_batch.py",
         "render_portrait_diptychs.py",
         "validate_portrait_diptychs.py",
+        "render_square_diptychs.py",
+        "validate_square_diptychs.py",
     )
     for name in required:
         require((scripts / name).is_file(), f"Missing helper: {name}")
@@ -448,6 +828,7 @@ def main() -> int:
             root = Path(temporary)
             generic_test(root, scripts)
             portrait_test(root, scripts)
+            square_test(root, scripts)
     except (
         OSError,
         subprocess.SubprocessError,
@@ -459,7 +840,7 @@ def main() -> int:
         )
         return 1
     print(
-        "PASS offline Frame Art smoke test: landscape + diptych rendered, validated, and no-clobber proven",
+        "PASS offline Frame Art smoke test: landscape, portrait diptych, and square diptych paths verified",
         flush=True,
     )
     return 0

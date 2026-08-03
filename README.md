@@ -19,7 +19,7 @@ The skill also handles the less glamorous part: source hashes, comparison sheets
 - Reconciles TV inventory after an unclear upload response instead of blindly retrying.
 - Builds rotation from the IDs that are actually present on the TV.
 
-Landscape, portrait, and square files can be sorted separately. The included renderer currently targets a 1920x1080 landscape Frame.
+Landscape, portrait, and square files can be sorted separately. Every renderer produces a 1920x1080 landscape panel for the Frame, including portrait and square diptychs.
 
 ## Framing choices
 
@@ -34,10 +34,11 @@ The presets are deliberately limited. Per-photo judgment is useful; ninety unrel
 | `full_bleed` | Images composed close to 16:9 | Fills the panel when it can do so without harming the composition. |
 | `soft_extension` | Named experiments only | Places the complete sharp image over a subdued blur made from the same source. |
 | `diptych_portrait` | Two portraits linked by time, place, story, or palette | Places both complete photos on one thick matte with a real center gutter. |
+| `diptych_square` | Two true 1:1 photos that clearly belong together | Keeps both squares complete and equal in size on one shared matte. |
 
 Adaptive mattes start with the image edges, then pull the result toward a small neutral palette and reduce its saturation. This gives the border a relationship to the photo without producing a bright green or red frame.
 
-Diptychs use the same approach across both images. Capture time and location carry more weight than a loose color match, and left/right order can be flipped so a gaze or leading line points into the pair. Photos with no convincing partner stay on their own.
+Diptychs use the same approach across both images. Capture time and location carry more weight than a loose color match, and left/right order can be flipped so a gaze or leading line points into the pair. Square pairs keep both sources complete at the same displayed size. Photos with no convincing partner stay on their own.
 
 The full policy lives in [references/design-system.md](references/design-system.md).
 Manifest fields and copyable examples live in [references/art-direction-schema.md](references/art-direction-schema.md).
@@ -118,6 +119,8 @@ python3 scripts/build_source_catalog.py \
 
 That command takes two size and modification-time snapshots before hashing. It records decoded orientation, dimensions, capture time, GPS when present, camera details, and a simple color summary without changing the source files.
 
+For square pairs, change the input folder and use `--orientation square`. The catalog filter includes images that are very close to 1:1, but the square-diptych renderer is intentionally stricter: decoded width and height must match exactly. This prevents an unnoticed stretch or trim.
+
 Add `--redact-gps` when location is unnecessary or when the catalog may leave the private workstation.
 
 Render and validate a single-photo batch:
@@ -148,6 +151,21 @@ python3 scripts/validate_portrait_diptychs.py \
   --art-direction ./run-artifacts/portrait-diptychs.json \
   --render-manifest ./run-artifacts/diptychs/diptych-render-manifest.json \
   --output ./run-artifacts/diptychs/validation.json
+```
+
+Square pairs have a separate renderer and validator so the equal-size, no-crop rules stay explicit:
+
+```bash
+python3 scripts/render_square_diptychs.py \
+  --catalog ./run-artifacts/square-sources.json \
+  --art-direction ./run-artifacts/square-diptychs.json \
+  --output-dir ./run-artifacts/square-diptychs
+
+python3 scripts/validate_square_diptychs.py \
+  --catalog ./run-artifacts/square-sources.json \
+  --art-direction ./run-artifacts/square-diptychs.json \
+  --render-manifest ./run-artifacts/square-diptychs/square-diptych-render-manifest.json \
+  --output ./run-artifacts/square-diptychs/validation.json
 ```
 
 ## Use it
@@ -193,6 +211,11 @@ run-artifacts/
 │   ├── rendered/
 │   ├── contact-sheets/
 │   ├── diptych-render-manifest.json
+│   └── validation.json
+├── square-diptychs/
+│   ├── rendered/
+│   ├── contact-sheets/
+│   ├── square-diptych-render-manifest.json
 │   └── validation.json
 ├── upload-journal.json
 └── rollback/
@@ -251,13 +274,13 @@ python3 -m py_compile scripts/*.py
 python3 scripts/self_test.py
 ```
 
-The self-test creates synthetic photos in a temporary directory, runs the single-photo and diptych paths, checks no-overwrite behavior, and removes the fixture when it finishes.
+The self-test creates synthetic photos in a temporary directory. It runs the single-photo, portrait-diptych, and square-diptych paths, checks deterministic square output and no-overwrite behavior, rejects near-square inputs, and removes the fixture when it finishes.
 
 ## Current limits
 
 - The audit-backed catalog adapter models two historical replacement batches plus one additions batch. New folders use the generic source cataloger instead.
 - Live TV and Home Assistant control depends on installation-specific helpers and entity names rather than one portable command.
-- The renderer targets landscape 1920x1080 panels. Portrait and square files can be sorted, but they need a separate display profile.
+- Every renderer currently targets a landscape 1920x1080 panel. Square diptychs require exact 1:1 source dimensions even though the folder cataloger uses a slightly broader square label.
 - The folder cataloger accepts JPEG, PNG, TIFF, and WebP. HEIC needs a Pillow-compatible decoder and is not enabled by default.
 - Samsung Art API behavior varies by model and firmware. Error 4000 does not have a sufficiently clear public definition to assign one universal cause.
 - `soft_extension` remains a canary-only treatment.

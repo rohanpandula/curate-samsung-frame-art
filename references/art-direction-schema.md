@@ -43,6 +43,14 @@ The normal minimums are 64 px outer margins and a 32 px gutter. The preferred ga
 
 See [portrait-diptych.example.json](portrait-diptych.example.json).
 
+## Square diptych document
+
+Use a synthetic `asset_id` for the combined panel and exactly two catalog `source_asset_ids` in left-to-right order. Both decoded source files must be true 1:1 images. The renderer preserves each full square and gives both the same displayed side length.
+
+Use `treatment: "diptych_square"`, `max_crop_fraction: 0.0`, a shared matte, `outer_margins`, and a center `gutter`. Outer margins must be at least 64 px and the gutter must be at least 32 px. The renderer supports a shared shadow with horizontal and vertical offsets. If `keyline` is omitted, it defaults to off.
+
+See [square-diptych.example.json](square-diptych.example.json).
+
 ## Enlargement gate
 
 Rendering fails when a source would be enlarged. A named exception requires both:

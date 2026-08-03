@@ -82,6 +82,17 @@ Rank pair evidence in this order:
 
 Do not force every portrait into a diptych. A strong standalone image is better than a weak pairing.
 
+### `diptych_square`
+
+Use for exactly two 1:1 photographs that belong together through time, place, subject, or visual rhythm.
+
+- Require both decoded sources to have equal width and height. A near-square source needs its own reviewed treatment.
+- Preserve both photographs in full. Give them the same displayed side length and never stretch one to make it fit.
+- Use one shared neutral matte. Keep at least 64 px around the pair and at least 32 px in the center gutter. The usual gallery values are 120 to 180 px outside and 48 to 80 px between images.
+- Default visible keylines off. Apply the same restrained shadow, including horizontal and vertical offset, to both photographs.
+- Record and respect left/right order. Let gaze, motion, or a repeated shape carry the eye through the pair.
+- Do not pair two photographs only because both happen to be square.
+
 ## Matte palette
 
 - Gallery white: `#F5F4EF`
@@ -110,7 +121,7 @@ For every photo record:
 
 Manifest `protected_edges` values are geometric and must be exactly `left`, `right`, `top`, or `bottom`. Put names of people, text, buildings, or other anchors in `protected_subjects`.
 
-For a diptych, run the checklist on both images and also record capture-time delta, location evidence, color relationship, compositional direction, and left/right order.
+For any diptych, run the checklist on both images and also record capture-time delta, location evidence, color relationship, compositional direction, and left/right order.
 
 ## Cohesion rules
 

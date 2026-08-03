@@ -10,14 +10,16 @@ Preserve the photograph while using vision-based art direction to choose a coher
 ## Route resources
 
 - Read [references/design-system.md](references/design-system.md) before choosing treatments or judging previews.
-- Read [references/art-direction-schema.md](references/art-direction-schema.md) before writing a single-photo or diptych manifest.
+- Read [references/art-direction-schema.md](references/art-direction-schema.md) before writing a single-photo, portrait-diptych, or square-diptych manifest.
 - Read `references/environment.local.md` before accessing a portfolio, NAS, Home Assistant, or TV. If it does not exist, use [references/environment.example.md](references/environment.example.md) to discover the installation and create the ignored local profile.
 - Use `scripts/build_catalog_from_audits.py` to bind current TV IDs to preserved source originals.
 - Use `scripts/build_source_catalog.py` for new files that do not have TV upload audits yet.
 - Use `scripts/render_frame_batch.py` to render exact 1920×1080 outputs and contact sheets.
 - Use `scripts/render_portrait_diptychs.py` for approved two-portrait pairings.
+- Use `scripts/render_square_diptychs.py` for approved pairs made from two exact 1:1 sources.
 - Use `scripts/validate_rendered_batch.py` before any upload.
 - Use `scripts/validate_portrait_diptychs.py` before uploading a diptych.
+- Use `scripts/validate_square_diptychs.py` before uploading a square diptych.
 
 ## Workflow
 
@@ -44,6 +46,7 @@ Preserve the photograph while using vision-based art direction to choose a coher
 4. Make per-photo decisions inside the shared system. Do not invent arbitrary one-off templates.
 5. Never use generative alteration, outpainting, object removal, or content-aware fill unless the user explicitly opts in for named images.
 6. For portrait diptychs, rank pairs by shared event, capture-time and location evidence, then visual or narrative fit. Record both source hashes and the left/right order. Leave weak matches unpaired.
+7. For square diptychs, choose exactly two verified 1:1 sources. Keep both photos complete, give them the same displayed side length, use one shared matte, and record the left/right order. Leave the keyline off unless the user asks for one.
 
 ### 4. Render and review
 
@@ -82,4 +85,4 @@ Preserve the photograph while using vision-based art direction to choose a coher
 
 ## Future shorthand
 
-Interpret requests such as "sync my new Frame photos," "pair my new portraits," "swap this rotated photo," or "run the Frame curator" as this complete workflow. Re-discover current state rather than trusting historical counts.
+Interpret requests such as "sync my new Frame photos," "pair my new portraits," "pair these squares," "swap this rotated photo," or "run the Frame curator" as this complete workflow. Re-discover current state rather than trusting historical counts.
